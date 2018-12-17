@@ -24,9 +24,6 @@ class ObjectUtil:
             return pickle.load(f)
 
 
-word2id = ObjectUtil.load_obj("../../data/ner/word2id.pickle")
-id2word = {i: w for w, i in word2id.items()}
-
 batch_size = 64
 seq_length = 300
 vocabulary_size = 12149

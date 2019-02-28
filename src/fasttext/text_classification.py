@@ -5,6 +5,15 @@ import fasttext as ft
 # git https://github.com/facebookresearch/fastText/
 # Demo https://github.com/pyk/fastText.py
 
+"""
+分类算法原理：
+    与cbow模型根据上下文预测中间词的算法类似，只不过在分类任务中是根据整个序列预测分类
+    在cbow模型基础上进行了优化：
+        引入n-gram相关理论，用n-gram的向量代替简单的词向量,一定程度上解决了词序信息丢失的问题
+        对于简单的词向量来说：“我爱他” 和 “他爱我”的表示是一样的；引入2-gram之后，则前者会表示为
+        我、爱、他、我爱、爱他；后者会表示为  他、爱、我、他爱、爱我  这五个向量求和，就能比较明确
+        的表示词序信息
+"""
 input_file = '../../data/fastText/train.txt'
 output = '../../model/fastText/classify.model'
 """
@@ -13,6 +22,7 @@ output = '../../model/fastText/classify.model'
     训练更多的轮次
     增加学习率
     用n-gram 代替unigram
+    增加词向量维度
 """
 # set params
 dim = 10  # 词向量的维度

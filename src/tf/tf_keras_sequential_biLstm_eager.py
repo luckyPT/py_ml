@@ -22,10 +22,10 @@ def get_data_generator(file_name, label):
         lines = []
         for line in file:
             seg_list = line.split("||")
-            sample = [0 for _ in range(100)]
+            sample = [0 for _ in range(SEQ_LENGTH)]
             i = 0
             for seg in seg_list:
-                if len(seg) > 0 and i < 100 and re.match("[\\u4e00-\\u9fa5]", seg):
+                if len(seg) > 0 and i < SEQ_LENGTH and re.match("[\\u4e00-\\u9fa5]", seg):
                     sample[i] += word2id.get(seg, len(word2id))
                     i = i + 1
             x.append(sample)

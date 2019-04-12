@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 
 tf.enable_eager_execution()
-batch_size = 32
+batch_size = 8
 vocabulary_size = 12149
 embedding_size = 50
 seq_length = 300
@@ -14,6 +14,8 @@ tag_size = 9  # 7表示 start，8表示pad
 但实际上不相等应该也是可以的，可以通过增加特殊的结束标识来完成；
 或者不使用padding，那么batch_size只能设置为1 来训练
 """
+
+model_path = "../../../model/seq2seq"
 
 
 class Seq2Seq_RNN_RNN_Model(tf.keras.Model):
@@ -196,10 +198,12 @@ def loss_function(real, preds):
 data_iter = get_data("../../../data/ner/data.txt")
 
 model = Seq2Seq_2LSTM_2LSTM_Attention_Model()
+model.load_weights(model_path)
 EPOCHS = 10000
 optimizer = tf.train.AdamOptimizer()
 for epoch in range(EPOCHS):
     try:
+        raise StopIteration("666")
         seq1, seq2 = data_iter.__next__()
         seq1 = tf.convert_to_tensor(seq1, dtype=tf.int32)
         with tf.GradientTape() as tape:
@@ -214,7 +218,7 @@ for epoch in range(EPOCHS):
     except StopIteration as e:
         data_iter = get_data("../../../data/ner/data.txt")
         # Test
-        """很耗时，所以暂时注释掉
+        # 很耗时，所以暂时注释掉
         seq1, seq2 = data_iter.__next__()
         seq1 = tf.convert_to_tensor(seq1, dtype=tf.int32)
         start_input = np.ones([batch_size, 1]) * 7
@@ -227,6 +231,11 @@ for epoch in range(EPOCHS):
                 input = np.concatenate((start_input, pre_lables), axis=1)
             predictions = model(seq1, input, is_train=False)
             pre_lables = tf.argmax(predictions, axis=2)
-        print(np.sum(pre_lables.numpy() == seq2, axis=1))
+        pre_lables = pre_lables.numpy()
+        error_index = pre_lables != seq2
+        for i in range(batch_size):
+            print('pre:', pre_lables[i][error_index[i]])
+            print('label:', seq2[i][error_index[i]])
+
+        # model.save_weights(model_path)
         print("one epoch complete... ...")
-        """

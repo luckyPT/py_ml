@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 
 tf.enable_eager_execution()
-batch_size = 8
+batch_size = 3
 vocabulary_size = 12149
 embedding_size = 50
 seq_length = 300
@@ -139,13 +139,16 @@ class Seq2Seq_2LSTM_2LSTM_Attention_Model(tf.keras.Model):
     def __init__(self):
         super(Seq2Seq_2LSTM_2LSTM_Attention_Model, self).__init__()
         self.embedding = tf.keras.layers.Embedding(vocabulary_size, embedding_size)
-        self.encoder1 = tf.keras.layers.LSTM(units=128, return_sequences=True, return_state=True)
-        self.encoder2 = tf.keras.layers.LSTM(units=128, return_sequences=True, return_state=True)
+        self.encoder1 = tf.keras.layers.LSTM(units=2, return_sequences=True, return_state=True)
+        self.encoder2 = tf.keras.layers.LSTM(units=2, return_sequences=True, return_state=True)
 
         self.decoder_embedding = tf.keras.layers.Embedding(tag_size, embedding_size)
-        self.attention = tf.Variable(tf.ones(shape=[seq_length, 128]))
-        self.decoder1 = tf.keras.layers.LSTM(units=128, return_sequences=True)
-        self.decoder2 = tf.keras.layers.LSTM(units=128, return_sequences=True)
+        # 这样定义attention有问题（论文中不是这么做的），仅仅在全部训练数据上，解码中每一步对应编码每一步输出的权重
+        # 正确的attention值是根据解码时前一个时刻的隐藏状态跟编码每一个时刻的隐藏状态计算dot，然后进行softmax得到seq_length个α值；
+        # 每一个时刻都会得到seq_length个α值
+        self.attention = tf.Variable(tf.ones(shape=[seq_length, seq_length * 2]))
+        self.decoder1 = tf.keras.layers.LSTM(units=2, return_sequences=True)
+        self.decoder2 = tf.keras.layers.LSTM(units=2, return_sequences=True)
         self.dense = tf.keras.layers.Dense(units=tag_size)
 
     def __call__(self, inputs, seq_label, is_train=True):
@@ -157,7 +160,8 @@ class Seq2Seq_2LSTM_2LSTM_Attention_Model(tf.keras.Model):
         state1_c = encoder_lstm1[2]
         state2_h = encoder_lstm2[1]
         state2_c = encoder_lstm2[2]
-        encoder_outseq = encoder_lstm2[0]
+        # 这里使用的是output_seq,论文中使用的是hidden state序列，但是现在用的RNN层貌似不能返回隐藏状态序列
+        encoder_outseq = tf.reshape(encoder_lstm2[0], [batch_size, 1, -1])
         attention_input = tf.multiply(encoder_outseq, self.attention)
 
         if is_train:
@@ -198,12 +202,11 @@ def loss_function(real, preds):
 data_iter = get_data("../../../data/ner/data.txt")
 
 model = Seq2Seq_2LSTM_2LSTM_Attention_Model()
-model.load_weights(model_path)
+# model.load_weights(model_path)
 EPOCHS = 10000
 optimizer = tf.train.AdamOptimizer()
 for epoch in range(EPOCHS):
     try:
-        raise StopIteration("666")
         seq1, seq2 = data_iter.__next__()
         seq1 = tf.convert_to_tensor(seq1, dtype=tf.int32)
         with tf.GradientTape() as tape:

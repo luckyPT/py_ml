@@ -64,7 +64,7 @@ def de_cond(i, de_embeded, de_gru_output):
 
 
 def de_gru(i, de_embeded, de_gru_output):
-    step_in = en_embeded[:, i]
+    step_in = de_embeded[:, i]
     last_state = de_gru_output[:, i]
     attention_weight = tf.nn.softmax(tf.matmul(encoder_output, tf.expand_dims(last_state, axis=2)))
     context_c = tf.reduce_sum(tf.multiply(attention_weight, encoder_output), axis=1)
@@ -80,8 +80,8 @@ def de_gru(i, de_embeded, de_gru_output):
 
 
 i0 = tf.constant(0)
-_, _, decoder_output = tf.while_loop(de_cond, de_gru, loop_vars=[i0, de_in_label, de_gru_output],
-                                     shape_invariants=[i0.get_shape(), de_in_label.get_shape(),
+_, _, decoder_output = tf.while_loop(de_cond, de_gru, loop_vars=[i0, de_embeded, de_gru_output],
+                                     shape_invariants=[i0.get_shape(), de_embeded.get_shape(),
                                                        tf.TensorShape([batch_size, None, gru_units])])
 
 # 全连接

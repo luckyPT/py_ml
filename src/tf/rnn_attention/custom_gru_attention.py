@@ -20,7 +20,7 @@ gru_units = 4
 en_input = tf.placeholder(tf.int32, shape=[None, None])
 en_embedding_variable = tf.Variable(tf.truncated_normal(shape=[input_vocab_size, embedding_size]))
 en_embeded = tf.nn.embedding_lookup(en_embedding_variable, en_input)
-en_gru_output = tf.Variable(tf.zeros(shape=[batch_size, 1, gru_units]), expected_shape=[batch_size, None, gru_units])
+en_gru_output = tf.zeros(shape=[batch_size, 1, gru_units])  # 这里不应该定义称为变量
 en_w_r_z = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units, gru_units * 2]))
 en_b_r_z = tf.Variable(tf.truncated_normal(shape=[gru_units * 2, ]))
 en_w_h = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units, gru_units]))

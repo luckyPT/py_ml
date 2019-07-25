@@ -109,8 +109,7 @@ en_input = tf.placeholder(tf.int32, shape=[None, None])
 en_embedding_variable = tf.Variable(tf.truncated_normal(shape=[input_vocab_size, embedding_size]))
 en_embeded = tf.nn.embedding_lookup(en_embedding_variable, en_input)
 en_gru_cell = GruCell(units=gru_units, step_dimension=embedding_size)
-gru_encoder_output = tf.Variable(tf.zeros(shape=[batch_size, 1, en_gru_cell.units]),
-                                 expected_shape=[batch_size, None, en_gru_cell.units])
+gru_encoder_output = tf.zeros(shape=[batch_size, 1, en_gru_cell.units])  # 这里不应该定义称为变量
 encoder_output = en_gru_cell(en_embeded, gru_encoder_output)
 
 # 解码

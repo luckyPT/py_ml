@@ -52,7 +52,7 @@ _, _, encoder_output = tf.while_loop(en_cond, en_gru, loop_vars=[i0, en_embeded,
 de_in_label = tf.placeholder(tf.int32, shape=[None, None])  # batch_size,seq_len
 de_embedding_variable = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, embedding_size]))
 de_embeded = tf.nn.embedding_lookup(de_embedding_variable, de_in_label)
-de_gru_output = tf.Variable(tf.expand_dims(en_gru_output[:, -1], axis=1), expected_shape=[batch_size, None, gru_units])
+de_gru_output = tf.expand_dims(encoder_output[:, -1], axis=1)  # init_state
 de_w_r_z = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units * 2, gru_units * 2]))
 de_b_r_z = tf.Variable(tf.truncated_normal(shape=[gru_units * 2, ]))
 de_w_h = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units * 2, gru_units]))
@@ -90,7 +90,7 @@ dense_b = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, ]))
 output = tf.tensordot(decoder_output, dense_w, [[2], [0]]) + dense_b
 loss = tf.losses.sparse_softmax_cross_entropy(labels=input_label, logits=output[:, 1:])
 
-optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(loss)
 decoder_start = np.zeros(shape=[batch_size, 1]) + output_vocab_size - 1
 with tf.Session() as sess:
     sess.run((tf.local_variables_initializer(), tf.global_variables_initializer()))

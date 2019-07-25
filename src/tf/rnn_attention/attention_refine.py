@@ -109,16 +109,16 @@ en_input = tf.placeholder(tf.int32, shape=[None, None])
 en_embedding_variable = tf.Variable(tf.truncated_normal(shape=[input_vocab_size, embedding_size]))
 en_embeded = tf.nn.embedding_lookup(en_embedding_variable, en_input)
 en_gru_cell = GruCell(units=gru_units, step_dimension=embedding_size)
-gru_encoder_output = tf.zeros(shape=[batch_size, 1, en_gru_cell.units])  # 这里不应该定义称为变量
-encoder_output = en_gru_cell(en_embeded, gru_encoder_output)
+gru_init_state = tf.zeros(shape=[batch_size, 1, en_gru_cell.units])  # 这里不应该定义称为变量
+encoder_output = en_gru_cell(en_embeded, gru_init_state)
 
 # 解码
 de_in_label = tf.placeholder(tf.int32, shape=[None, None])  # batch_size,seq_len
 de_embedding_variable = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, embedding_size]))
 de_embeded = tf.nn.embedding_lookup(de_embedding_variable, de_in_label)
 de_gru_cell = GruCellAttentionDecoder(gru_units, step_dimension=embedding_size)
-de_gru_output = tf.expand_dims(encoder_output[:, -1], axis=1)  # init state
-decoder_output = de_gru_cell(de_embeded, de_gru_output, encoder_output)
+de_init_state = tf.expand_dims(encoder_output[:, -1], axis=1)  # init state
+decoder_output = de_gru_cell(de_embeded, de_init_state, encoder_output)
 # 全连接
 dense_w = tf.Variable(tf.truncated_normal(shape=[gru_units, output_vocab_size]))
 dense_b = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, ]))

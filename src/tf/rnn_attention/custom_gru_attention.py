@@ -20,7 +20,7 @@ gru_units = 4
 en_input = tf.placeholder(tf.int32, shape=[None, None])
 en_embedding_variable = tf.Variable(tf.truncated_normal(shape=[input_vocab_size, embedding_size]))
 en_embeded = tf.nn.embedding_lookup(en_embedding_variable, en_input)
-en_gru_output = tf.zeros(shape=[batch_size, 1, gru_units])  # 这里不应该定义称为变量
+en_gru_init_state = tf.zeros(shape=[batch_size, 1, gru_units])  # 这里不应该定义称为变量
 en_w_r_z = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units, gru_units * 2]))
 en_b_r_z = tf.Variable(tf.truncated_normal(shape=[gru_units * 2, ]))
 en_w_h = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units, gru_units]))
@@ -45,14 +45,14 @@ def en_gru(i, en_embeded, en_gru_output):
 
 
 i0 = tf.constant(0)
-_, _, encoder_output = tf.while_loop(en_cond, en_gru, loop_vars=[i0, en_embeded, en_gru_output],
+_, _, encoder_output = tf.while_loop(en_cond, en_gru, loop_vars=[i0, en_embeded, en_gru_init_state],
                                      shape_invariants=[i0.get_shape(), en_embeded.get_shape(),
                                                        tf.TensorShape([batch_size, None, gru_units])])
 # 解码逻辑
 de_in_label = tf.placeholder(tf.int32, shape=[None, None])  # batch_size,seq_len
 de_embedding_variable = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, embedding_size]))
 de_embeded = tf.nn.embedding_lookup(de_embedding_variable, de_in_label)
-de_gru_output = tf.expand_dims(encoder_output[:, -1], axis=1)  # init_state
+de_init_state = tf.expand_dims(encoder_output[:, -1], axis=1)  # init_state
 de_w_r_z = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units * 2, gru_units * 2]))
 de_b_r_z = tf.Variable(tf.truncated_normal(shape=[gru_units * 2, ]))
 de_w_h = tf.Variable(tf.truncated_normal(shape=[embedding_size + gru_units * 2, gru_units]))
@@ -80,7 +80,7 @@ def de_gru(i, de_embeded, de_gru_output):
 
 
 i0 = tf.constant(0)
-_, _, decoder_output = tf.while_loop(de_cond, de_gru, loop_vars=[i0, de_embeded, de_gru_output],
+_, _, decoder_output = tf.while_loop(de_cond, de_gru, loop_vars=[i0, de_embeded, de_init_state],
                                      shape_invariants=[i0.get_shape(), de_embeded.get_shape(),
                                                        tf.TensorShape([batch_size, None, gru_units])])
 

@@ -4,6 +4,7 @@ import tensorflow as tf
 """
 by panTeng
 date 2019.7.21
+建议使用：attention_refine.py
 """
 print(tf.__version__)
 input_data = np.array([[1, 2, 3, 4, 5], [2, 4, 1, 4, 5], [4, 3, 2, 3, 1]])  # batch_size=3,seq_length=5
@@ -66,8 +67,8 @@ def de_cond(i, de_embeded, de_gru_output):
 def de_gru(i, de_embeded, de_gru_output):
     step_in = de_embeded[:, i]
     last_state = de_gru_output[:, i]
-    attention_weight = tf.nn.softmax(tf.matmul(encoder_output, tf.expand_dims(last_state, axis=2)))
-    context_c = tf.reduce_sum(tf.multiply(attention_weight, encoder_output), axis=1)
+    attention_weight = tf.nn.softmax(tf.squeeze(tf.matmul(encoder_output, tf.expand_dims(last_state, axis=2))))
+    context_c = tf.reduce_sum(tf.multiply(tf.expand_dims(attention_weight, axis=2), encoder_output), axis=1)
     step_in = tf.concat((step_in, context_c), axis=-1)
     in_concat = tf.concat((step_in, last_state), axis=-1)
     gate_inputs = tf.sigmoid(tf.matmul(in_concat, de_w_r_z) + de_b_r_z)
@@ -88,7 +89,7 @@ _, _, decoder_output = tf.while_loop(de_cond, de_gru, loop_vars=[i0, de_embeded,
 dense_w = tf.Variable(tf.truncated_normal(shape=[gru_units, output_vocab_size]))
 dense_b = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, ]))
 output = tf.tensordot(decoder_output, dense_w, [[2], [0]]) + dense_b
-loss = tf.losses.sparse_softmax_cross_entropy(labels=input_label, logits=output[:, 1:])
+loss = tf.losses.sparse_softmax_cross_entropy(labels=de_in_label[:, 1:], logits=output[:, 1:-1])
 
 optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(loss)
 decoder_start = np.zeros(shape=[batch_size, 1]) + output_vocab_size - 1

@@ -65,8 +65,9 @@ class GruCellAttentionDecoder:
     def de_gru(self, i, de_embeded, de_gru_output, encoder_output):
         step_in = de_embeded[:, i]
         last_state = de_gru_output[:, i]
-        attention_weight = tf.nn.softmax(tf.matmul(encoder_output, tf.expand_dims(last_state, axis=2)))
-        context_c = tf.reduce_sum(tf.multiply(attention_weight, encoder_output), axis=1)
+        # 由于使用了tf.squeeze，所以在这里batch_size=1或者seq len=1时，可能会有问题
+        attention_weight = tf.nn.softmax(tf.squeeze(tf.matmul(encoder_output, tf.expand_dims(last_state, axis=2))))
+        context_c = tf.reduce_sum(tf.multiply(tf.expand_dims(attention_weight, axis=2), encoder_output), axis=1)
         step_in = tf.concat((step_in, context_c), axis=-1)
         in_concat = tf.concat((step_in, last_state), axis=-1)
         gate_inputs = tf.sigmoid(tf.matmul(in_concat, self.de_w_r_z) + self.de_b_r_z)
@@ -123,17 +124,23 @@ decoder_output = de_gru_cell(de_embeded, de_init_state, encoder_output)
 dense_w = tf.Variable(tf.truncated_normal(shape=[gru_units, output_vocab_size]))
 dense_b = tf.Variable(tf.truncated_normal(shape=[output_vocab_size, ]))
 output = tf.tensordot(decoder_output, dense_w, [[2], [0]]) + dense_b
-loss = tf.losses.sparse_softmax_cross_entropy(labels=input_label, logits=output[:, 1:])
+# 易错点，labels=de_in_label[:, 1:] 应该从第1个元素开始，而不是第0个
+loss = tf.losses.sparse_softmax_cross_entropy(labels=de_in_label[:, 1:], logits=output[:, 1:-1])
 
 optimizer = tf.train.RMSPropOptimizer(learning_rate=0.01).minimize(loss)
 decoder_start = np.zeros(shape=[batch_size, 1]) + output_vocab_size - 1
-
-sess.run(tf.global_variables_initializer())
+saver = tf.train.Saver()
+# sess.run(tf.global_variables_initializer())
+saver.restore(sess, "./test.model")
+"""
 for i in range(1000):
+    #这里丢弃了input_label最后一个时间步，所以识别时不会识别最后一个时间步,实际应用中可以使用padding或者结束符来补上最后一个时间步
     print(sess.run((loss, optimizer),
                    feed_dict={en_input: input_data,
                               de_in_label: np.concatenate((decoder_start, input_label), axis=-1)[:, 0:-1]}))
+saver.save(sess, save_path="./test.model")
+"""
 output = sess.run(output,
                   feed_dict={en_input: input_data,
                              de_in_label: np.concatenate((decoder_start, input_label), axis=-1)[:, 0:-1]})
-print(np.argmax(output, axis=2)[:, 1:])
+print(np.argmax(output, axis=2)[:, 1:-1])
